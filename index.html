@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
-  <script src="https://unpkg.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
 
+    /* Barra superior sutil y fija */
     nav {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid #e5e0d8;
       padding: 10px 12px;
@@ -42,24 +42,18 @@
       color: #ffffff;
     }
 
-    #estado {
-      text-align: center;
-      padding: 50px 20px;
-      color: #6d4c41;
-      font-size: 15px;
-    }
-
-    #pdf-container {
+    .contenedor {
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       width: 100%;
     }
 
-    canvas {
+    /* Contenedor con la proporción exacta de tu diseño (1980 x 8000) */
+    #visor-pdf {
       width: 100%;
       max-width: 650px;
-      height: auto !important;
+      aspect-ratio: 1980 / 8000;
+      border: none;
       display: block;
     }
   </style>
@@ -74,64 +68,24 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div id="estado">Abriendo PDF...</div>
-  <div id="pdf-container"></div>
+  <div class="contenedor">
+    <!-- Carga tu archivo menu.pdf usando el motor nativo del navegador -->
+    <iframe id="visor-pdf" src="menu.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"></iframe>
+  </div>
 
   <script>
     const ALTO_ORIGINAL_DISENO = 8000;
 
-    async function cargarMenu() {
-      const estado = document.getElementById('estado');
-      try {
-        // Verifica si la librería cargó
-        if (typeof pdfjsLib === 'undefined') {
-          throw new Error('No se pudo cargar el lector de PDF. Revisá tu conexión.');
-        }
-
-        // Descarga el archivo menu.pdf de tu misma carpeta
-        const respuesta = await fetch('menu.pdf?v=' + Date.now());
-        if (!respuesta.ok) {
-          throw new Error('No se encontró "menu.pdf" en GitHub (Error ' + respuesta.status + ')');
-        }
-
-        const datosPdf = await respuesta.arrayBuffer();
-
-        // disableWorker: true evita el bloqueo de seguridad de GitHub Pages
-        const pdf = await pdfjsLib.getDocument({
-          data: datosPdf,
-          disableWorker: true
-        }).promise;
-
-        estado.style.display = 'none';
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 0.8 });
-          const canvas = document.createElement('canvas');
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          document.getElementById('pdf-container').appendChild(canvas);
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        }
-      } catch (e) {
-        estado.style.color = '#c62828';
-        estado.innerText = 'Error: ' + e.message;
-      }
-    }
-
     function irAPixel(pixelEnDiseno) {
-      const contenedor = document.getElementById('pdf-container');
+      const visor = document.getElementById('visor-pdf');
       const barraAltura = document.getElementById('navbar').offsetHeight;
-      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
       
       window.scrollTo({
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
     }
-
-    cargarMenu();
   </script>
 </body>
 </html>
-
