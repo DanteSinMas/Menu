@@ -8,7 +8,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
 
-    /* Barra superior sutil y fija */
     nav {
       position: sticky;
       top: 0;
@@ -48,7 +47,7 @@
       width: 100%;
     }
 
-    #visor-pdf {
+    #visor-drive {
       width: 100%;
       max-width: 650px;
       aspect-ratio: 1980 / 8000;
@@ -68,18 +67,23 @@
   </nav>
 
   <div class="contenedor">
-    <iframe id="visor-pdf"></iframe>
+    <iframe id="visor-drive"></iframe>
   </div>
 
   <script>
-    const ALTO_ORIGINAL_DISENO = 8000;
-    const urlPdf = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/') + 'menu.pdf';
+    // PEGÁ AQUÍ EL ENLACE QUE COPIASTE DE GOOGLE DRIVE
+    const ENLACE_DE_GOOGLE_DRIVE = 'https://drive.google.com/file/d/1313aU2pU8aXNOlWyXA0t32W8ic8nis49/view?usp=drive_link';
     
-    // Usa el visor web de Google Drive que muestra el PDF directo en celulares sin descargar nada
-    const visor = document.getElementById('visor-pdf');
-    visor.src = 'https://google.com' + encodeURIComponent(urlPdf);
+    const ALTO_ORIGINAL_DISENO = 8000;
+
+    // Convierte automáticamente tu link de compartir en un visor incrustado limpio
+    const idArchivo = ENLACE_DE_GOOGLE_DRIVE.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (idArchivo) {
+      document.getElementById('visor-drive').src = `https://google.com{idArchivo[1]}/preview`;
+    }
 
     function irAPixel(pixelEnDiseno) {
+      const visor = document.getElementById('visor-drive');
       const barraAltura = document.getElementById('navbar').offsetHeight;
       const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
       
