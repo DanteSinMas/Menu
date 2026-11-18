@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
+  <script src="https://cloudflare.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
@@ -42,18 +43,24 @@
       color: #ffffff;
     }
 
-    .contenedor {
+    #estado {
+      text-align: center;
+      padding: 50px 20px;
+      color: #6d4c41;
+      font-size: 15px;
+    }
+
+    #pdf-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       width: 100%;
     }
 
-    /* Contenedor con la proporción exacta de tu diseño (1980 x 8000) */
-    #visor-pdf {
+    canvas {
       width: 100%;
       max-width: 650px;
-      aspect-ratio: 1980 / 8000;
-      border: none;
+      height: auto !important;
       display: block;
     }
   </style>
@@ -68,24 +75,47 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div class="contenedor">
-    <!-- Carga tu archivo menu.pdf usando el motor nativo del navegador -->
-    <iframe id="visor-pdf" src="menu.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"></iframe>
-  </div>
+  <div id="estado">Cargando menú...</div>
+  <div id="pdf-container"></div>
 
   <script>
     const ALTO_ORIGINAL_DISENO = 8000;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
+
+    async function cargarMenu() {
+      const estado = document.getElementById('estado');
+      try {
+        const pdf = await pdfjsLib.getDocument('menu.pdf?v=' + Date.now()).promise;
+        estado.style.display = 'none';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          // Escala 0.6: calidad HD para celulares sin pasarse del límite de memoria de pantalla
+          const viewport = page.getViewport({ scale: 0.6 });
+          const canvas = document.createElement('canvas');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          document.getElementById('pdf-container').appendChild(canvas);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        }
+      } catch (e) {
+        estado.style.color = '#c62828';
+        estado.innerText = 'Error al abrir el PDF: ' + e.message;
+      }
+    }
 
     function irAPixel(pixelEnDiseno) {
-      const visor = document.getElementById('visor-pdf');
+      const contenedor = document.getElementById('pdf-container');
       const barraAltura = document.getElementById('navbar').offsetHeight;
-      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
       
       window.scrollTo({
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
     }
+
+    cargarMenu();
   </script>
 </body>
 </html>
