@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú</title>
+  <script src="https://cloudflare.com"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
+
+    /* Barra superior sutil y fija */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e5e0d8;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    nav::-webkit-scrollbar { display: none; }
+
+    nav button {
+      background: #f0ebe3;
+      color: #3e2723;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    nav button:active {
+      background: #3e2723;
+      color: #ffffff;
+    }
+
+    #estado {
+      text-align: center;
+      padding: 50px 20px;
+      color: #6d4c41;
+      font-size: 15px;
+    }
+
+    #pdf-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 650px;
+      height: auto !important;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BOTONES DE AUTOSCROLL (Modificá los nombres y el píxel entre 0 y 8000) -->
+  <nav id="navbar">
+    <button onclick="irAPixel(0)">Inicio</button>
+    <button onclick="irAPixel(1200)">Cafetería</button>
+    <button onclick="irAPixel(3200)">Pastelería</button>
+    <button onclick="irAPixel(5400)">Almuerzos</button>
+    <button onclick="irAPixel(7000)">Bebidas</button>
+  </nav>
+
+  <div id="estado">Cargando menú...</div>
+  <div id="pdf-container"></div>
+
+  <script>
+    // Alto total de tu diseño original
+    const ALTO_ORIGINAL_DISENO = 8000;
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
+
+    async function cargarMenu() {
+      try {
+        const urlPdf = `menu.pdf?t=${Date.now()}`;
+        const pdf = await pdfjsLib.getDocument(urlPdf).promise;
+        document.getElementById('estado').style.display = 'none';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          document.getElementById('pdf-container').appendChild(canvas);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        }
+      } catch (e) {
+        document.getElementById('estado').innerText = 'Error al cargar el menú. Verificá que el archivo se llame menu.pdf';
+      }
+    }
+
+    function irAPixel(pixelEnDiseno) {
+      const contenedor = document.getElementById('pdf-container');
+      const barraAltura = document.getElementById('navbar').offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
+      
+      window.scrollTo({
+        top: Math.max(0, posicionReal - barraAltura - 10),
+        behavior: 'smooth'
+      });
+    }
+
+    cargarMenu();
+  </script>
+</body>
+</html>
