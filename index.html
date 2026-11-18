@@ -42,24 +42,18 @@
       color: #ffffff;
     }
 
-    #estado {
-      text-align: center;
-      padding: 50px 20px;
-      color: #6d4c41;
-      font-size: 15px;
-    }
-
-    #pdf-container {
+    .contenedor {
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       width: 100%;
     }
 
-    canvas {
+    /* Mantiene el largo proporcional de 1980x8000 para que scrollee toda la página */
+    #visor-google {
       width: 100%;
       max-width: 650px;
-      height: auto !important;
+      aspect-ratio: 1980 / 8000;
+      border: none;
       display: block;
     }
   </style>
@@ -74,58 +68,29 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div id="estado">Preparando carta...</div>
-  <div id="pdf-container"></div>
+  <div class="contenedor">
+    <iframe id="visor-google" src=""></iframe>
+  </div>
 
-  <script type="module">
-    import * as pdfjsLib from 'https://jsdelivr.net';
+  <script>
+    // 1. REEMPLAZÁ ESTO POR EL LINK REAL DE TU PDF EN GITHUB PAGES
+    const URL_COMPLETA_DE_TU_PDF = 'https://github.io';
     
-    // Conecta el motor interno desde la misma red sin bloqueos
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://jsdelivr.net';
-
     const ALTO_ORIGINAL_DISENO = 8000;
-    const estado = document.getElementById('estado');
 
-    async function cargarMenu() {
-      try {
-        estado.innerText = 'Descargando menú...';
-        const loadingTask = pdfjsLib.getDocument('menu.pdf?v=' + Date.now());
-        const pdf = await loadingTask.promise;
+    // Carga el PDF a través de los servidores de Google (funciona directo en todos los celulares)
+    const visor = document.getElementById('visor-google');
+    visor.src = 'https://google.com' + encodeURIComponent(URL_COMPLETA_DE_TU_PDF + '?v=' + Date.now());
 
-        estado.innerText = 'Dibujando carta...';
-        const contenedor = document.getElementById('pdf-container');
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          // Escala 0.55: nítido en celulares y liviano en memoria
-          const viewport = page.getViewport({ scale: 0.55 });
-          const canvas = document.createElement('canvas');
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          contenedor.appendChild(canvas);
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        }
-
-        estado.style.display = 'none';
-      } catch (e) {
-        estado.style.color = '#c62828';
-        estado.innerText = 'No se pudo cargar: ' + e.message;
-      }
-    }
-
-    // Hacemos la función global para que los botones de arriba la encuentren
-    window.irAPixel = function(pixelEnDiseno) {
-      const contenedor = document.getElementById('pdf-container');
+    function irAPixel(pixelEnDiseno) {
       const barraAltura = document.getElementById('navbar').offsetHeight;
-      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
       
       window.scrollTo({
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
-    };
-
-    cargarMenu();
+    }
   </script>
 </body>
 </html>
