@@ -9,7 +9,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
 
-    /* Barra superior sutil y fija */
     nav {
       position: sticky;
       top: 0;
@@ -36,7 +35,6 @@
       font-weight: 500;
       cursor: pointer;
       flex-shrink: 0;
-      transition: background 0.2s;
     }
 
     nav button:active {
@@ -68,7 +66,6 @@
 </head>
 <body>
 
-  <!-- BOTONES DE AUTOSCROLL (Modificá los nombres y el píxel entre 0 y 8000) -->
   <nav id="navbar">
     <button onclick="irAPixel(0)">Inicio</button>
     <button onclick="irAPixel(1200)">Cafetería</button>
@@ -81,20 +78,25 @@
   <div id="pdf-container"></div>
 
   <script>
-    // Alto total de tu diseño original
     const ALTO_ORIGINAL_DISENO = 8000;
-
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
 
     async function cargarMenu() {
+      const estado = document.getElementById('estado');
       try {
-        const urlPdf = `menu.pdf?t=${Date.now()}`;
-        const pdf = await pdfjsLib.getDocument(urlPdf).promise;
-        document.getElementById('estado').style.display = 'none';
+        // Verifica si el archivo existe antes de intentar dibujarlo
+        const respuesta = await fetch(`menu.pdf?t=${Date.now()}`);
+        if (!respuesta.ok) {
+          throw new Error('No se encontró menu.pdf en la carpeta (Error ' + respuesta.status + ')');
+        }
+
+        const pdf = await pdfjsLib.getDocument(`menu.pdf?t=${Date.now()}`).promise;
+        estado.style.display = 'none';
 
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.5 });
+          // Escala 0.8: mantiene nitidez total porque el original mide 1980px y evita trabar celulares
+          const viewport = page.getViewport({ scale: 0.8 });
           const canvas = document.createElement('canvas');
           canvas.height = viewport.height;
           canvas.width = viewport.width;
@@ -102,7 +104,8 @@
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
         }
       } catch (e) {
-        document.getElementById('estado').innerText = 'Error al cargar el menú. Verificá que el archivo se llame menu.pdf';
+        estado.style.color = '#c62828';
+        estado.innerText = 'Detalle del error: ' + e.message;
       }
     }
 
