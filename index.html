@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
+  <!-- Versión clásica ultra compatible con todos los celulares -->
+  <script src="https://cloudflare.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
 
-    /* Barra superior sutil y fija */
     nav {
       position: sticky;
       top: 0;
@@ -42,18 +43,24 @@
       color: #ffffff;
     }
 
-    .contenedor {
+    #estado {
+      text-align: center;
+      padding: 50px 20px;
+      color: #6d4c41;
+      font-size: 15px;
+    }
+
+    #pdf-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       width: 100%;
     }
 
-    /* Mantiene el largo proporcional de 1980x8000 para que scrollee toda la página */
-    #visor-google {
+    canvas {
       width: 100%;
       max-width: 650px;
-      aspect-ratio: 1980 / 8000;
-      border: none;
+      height: auto !important;
       display: block;
     }
   </style>
@@ -68,29 +75,64 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div class="contenedor">
-    <iframe id="visor-google" src=""></iframe>
-  </div>
+  <div id="estado">Cargando carta...</div>
+  <div id="pdf-container"></div>
 
   <script>
-    // 1. REEMPLAZÁ ESTO POR EL LINK REAL DE TU PDF EN GITHUB PAGES
-    const URL_COMPLETA_DE_TU_PDF = 'https://dantesinmas.github.io/Menu/';
-    
     const ALTO_ORIGINAL_DISENO = 8000;
+    const estado = document.getElementById('estado');
 
-    // Carga el PDF a través de los servidores de Google (funciona directo en todos los celulares)
-    const visor = document.getElementById('visor-google');
-    visor.src = 'https://google.com' + encodeURIComponent(URL_COMPLETA_DE_TU_PDF + '?v=' + Date.now());
+    async function iniciar() {
+      try {
+        // 1. Descarga el archivo menu.pdf como datos puros
+        const respuesta = await fetch('./menu.pdf?v=' + Date.now());
+        if (!respuesta.ok) {
+          throw new Error('No se encontró menu.pdf (Código ' + respuesta.status + ')');
+        }
+        const buffer = await respuesta.arrayBuffer();
+
+        // 2. Abre el PDF sin usar workers externos que se bloquean
+        const pdf = await pdfjsLib.getDocument({
+          data: buffer,
+          disableWorker: true
+        }).promise;
+
+        const contenedor = document.getElementById('pdf-container');
+        estado.style.display = 'none';
+
+        for (let num = 1; num <= pdf.numPages; num++) {
+          const page = await pdf.getPage(num);
+          // Escala 0.5: crea una imagen de 990x4000px (nítida y aprobada por todos los celulares)
+          const viewport = page.getViewport({ scale: 0.5 });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          contenedor.appendChild(canvas);
+
+          await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: viewport
+          }).promise;
+        }
+      } catch (err) {
+        estado.style.color = '#c62828';
+        estado.innerText = 'Error: ' + err.message;
+      }
+    }
 
     function irAPixel(pixelEnDiseno) {
+      const contenedor = document.getElementById('pdf-container');
       const barraAltura = document.getElementById('navbar').offsetHeight;
-      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
       
       window.scrollTo({
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
     }
+
+    iniciar();
   </script>
 </body>
 </html>
