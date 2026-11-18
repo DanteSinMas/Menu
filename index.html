@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
-  <script src="https://cloudflare.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
@@ -75,36 +74,47 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div id="estado">Cargando menú...</div>
+  <div id="estado">Preparando carta...</div>
   <div id="pdf-container"></div>
 
-  <script>
+  <script type="module">
+    import * as pdfjsLib from 'https://jsdelivr.net';
+    
+    // Conecta el motor interno desde la misma red sin bloqueos
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://jsdelivr.net';
+
     const ALTO_ORIGINAL_DISENO = 8000;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
+    const estado = document.getElementById('estado');
 
     async function cargarMenu() {
-      const estado = document.getElementById('estado');
       try {
-        const pdf = await pdfjsLib.getDocument('menu.pdf?v=' + Date.now()).promise;
-        estado.style.display = 'none';
+        estado.innerText = 'Descargando menú...';
+        const loadingTask = pdfjsLib.getDocument('menu.pdf?v=' + Date.now());
+        const pdf = await loadingTask.promise;
+
+        estado.innerText = 'Dibujando carta...';
+        const contenedor = document.getElementById('pdf-container');
 
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          // Escala 0.6: calidad HD para celulares sin pasarse del límite de memoria de pantalla
-          const viewport = page.getViewport({ scale: 0.6 });
+          // Escala 0.55: nítido en celulares y liviano en memoria
+          const viewport = page.getViewport({ scale: 0.55 });
           const canvas = document.createElement('canvas');
           canvas.height = viewport.height;
           canvas.width = viewport.width;
-          document.getElementById('pdf-container').appendChild(canvas);
+          contenedor.appendChild(canvas);
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
         }
+
+        estado.style.display = 'none';
       } catch (e) {
         estado.style.color = '#c62828';
-        estado.innerText = 'Error al abrir el PDF: ' + e.message;
+        estado.innerText = 'No se pudo cargar: ' + e.message;
       }
     }
 
-    function irAPixel(pixelEnDiseno) {
+    // Hacemos la función global para que los botones de arriba la encuentren
+    window.irAPixel = function(pixelEnDiseno) {
       const contenedor = document.getElementById('pdf-container');
       const barraAltura = document.getElementById('navbar').offsetHeight;
       const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
@@ -113,7 +123,7 @@
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
-    }
+    };
 
     cargarMenu();
   </script>
