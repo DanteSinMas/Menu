@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
-  <!-- Versión clásica ultra compatible con todos los celulares -->
-  <script src="https://cloudflare.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
 
+    /* Barra superior sutil y fija */
     nav {
       position: sticky;
       top: 0;
@@ -43,24 +42,17 @@
       color: #ffffff;
     }
 
-    #estado {
-      text-align: center;
-      padding: 50px 20px;
-      color: #6d4c41;
-      font-size: 15px;
-    }
-
-    #pdf-container {
+    .contenedor {
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       width: 100%;
     }
 
-    canvas {
+    #visor-pdf {
       width: 100%;
       max-width: 650px;
-      height: auto !important;
+      aspect-ratio: 1980 / 8000;
+      border: none;
       display: block;
     }
   </style>
@@ -75,64 +67,27 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div id="estado">Cargando carta...</div>
-  <div id="pdf-container"></div>
+  <div class="contenedor">
+    <iframe id="visor-pdf"></iframe>
+  </div>
 
   <script>
     const ALTO_ORIGINAL_DISENO = 8000;
-    const estado = document.getElementById('estado');
-
-    async function iniciar() {
-      try {
-        // 1. Descarga el archivo menu.pdf como datos puros
-        const respuesta = await fetch('./menu.pdf?v=' + Date.now());
-        if (!respuesta.ok) {
-          throw new Error('No se encontró menu.pdf (Código ' + respuesta.status + ')');
-        }
-        const buffer = await respuesta.arrayBuffer();
-
-        // 2. Abre el PDF sin usar workers externos que se bloquean
-        const pdf = await pdfjsLib.getDocument({
-          data: buffer,
-          disableWorker: true
-        }).promise;
-
-        const contenedor = document.getElementById('pdf-container');
-        estado.style.display = 'none';
-
-        for (let num = 1; num <= pdf.numPages; num++) {
-          const page = await pdf.getPage(num);
-          // Escala 0.5: crea una imagen de 990x4000px (nítida y aprobada por todos los celulares)
-          const viewport = page.getViewport({ scale: 0.5 });
-
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          contenedor.appendChild(canvas);
-
-          await page.render({
-            canvasContext: canvas.getContext('2d'),
-            viewport: viewport
-          }).promise;
-        }
-      } catch (err) {
-        estado.style.color = '#c62828';
-        estado.innerText = 'Error: ' + err.message;
-      }
-    }
+    const urlPdf = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/') + 'menu.pdf';
+    
+    // Usa el visor web de Google Drive que muestra el PDF directo en celulares sin descargar nada
+    const visor = document.getElementById('visor-pdf');
+    visor.src = 'https://google.com' + encodeURIComponent(urlPdf);
 
     function irAPixel(pixelEnDiseno) {
-      const contenedor = document.getElementById('pdf-container');
       const barraAltura = document.getElementById('navbar').offsetHeight;
-      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * contenedor.offsetHeight;
+      const posicionReal = (pixelEnDiseno / ALTO_ORIGINAL_DISENO) * visor.offsetHeight;
       
       window.scrollTo({
         top: Math.max(0, posicionReal - barraAltura - 10),
         behavior: 'smooth'
       });
     }
-
-    iniciar();
   </script>
 </body>
 </html>
