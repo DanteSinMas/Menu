@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menú</title>
-  <script src="https://cloudflare.com"></script>
+  <script src="https://unpkg.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9f6f2; }
@@ -74,28 +74,38 @@
     <button onclick="irAPixel(7000)">Bebidas</button>
   </nav>
 
-  <div id="estado">Cargando menú...</div>
+  <div id="estado">Abriendo PDF...</div>
   <div id="pdf-container"></div>
 
   <script>
     const ALTO_ORIGINAL_DISENO = 8000;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
 
     async function cargarMenu() {
       const estado = document.getElementById('estado');
       try {
-        // Verifica si el archivo existe antes de intentar dibujarlo
-        const respuesta = await fetch(`menu.pdf?t=${Date.now()}`);
-        if (!respuesta.ok) {
-          throw new Error('No se encontró menu.pdf en la carpeta (Error ' + respuesta.status + ')');
+        // Verifica si la librería cargó
+        if (typeof pdfjsLib === 'undefined') {
+          throw new Error('No se pudo cargar el lector de PDF. Revisá tu conexión.');
         }
 
-        const pdf = await pdfjsLib.getDocument(`menu.pdf?t=${Date.now()}`).promise;
+        // Descarga el archivo menu.pdf de tu misma carpeta
+        const respuesta = await fetch('menu.pdf?v=' + Date.now());
+        if (!respuesta.ok) {
+          throw new Error('No se encontró "menu.pdf" en GitHub (Error ' + respuesta.status + ')');
+        }
+
+        const datosPdf = await respuesta.arrayBuffer();
+
+        // disableWorker: true evita el bloqueo de seguridad de GitHub Pages
+        const pdf = await pdfjsLib.getDocument({
+          data: datosPdf,
+          disableWorker: true
+        }).promise;
+
         estado.style.display = 'none';
 
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          // Escala 0.8: mantiene nitidez total porque el original mide 1980px y evita trabar celulares
           const viewport = page.getViewport({ scale: 0.8 });
           const canvas = document.createElement('canvas');
           canvas.height = viewport.height;
@@ -105,7 +115,7 @@
         }
       } catch (e) {
         estado.style.color = '#c62828';
-        estado.innerText = 'Detalle del error: ' + e.message;
+        estado.innerText = 'Error: ' + e.message;
       }
     }
 
@@ -124,3 +134,4 @@
   </script>
 </body>
 </html>
+
